@@ -229,10 +229,10 @@ spec:
 			By("attempting to create workspace with invalid image")
 			cmd := exec.Command("kubectl", "apply", "-f",
 				"test/e2e/static/template-validation/rejected-image-workspace.yaml")
-			
+
 			_, err := utils.Run(cmd)
 			Expect(err).To(HaveOccurred(), "Expected webhook to reject workspace with invalid image")
-			
+
 			By("verifying workspace was not created")
 			cmd = exec.Command("kubectl", "get", "workspace", "test-rejected-workspace", "--ignore-not-found")
 			output, err := utils.Run(cmd)
@@ -494,6 +494,119 @@ spec:
 			output, err = utils.Run(cmd)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(BeEmpty())
+		})
+	})
+
+	Context("Template Label Management", func() {
+		const (
+			labelKey              = "workspace.jupyter.org/template"
+			testWorkspaceName     = "label-test-workspace"
+			baseTemplateName      = "mutability-base-template"
+			alternateTemplateName = "restricted-template-mutability"
+		)
+
+		BeforeEach(func() {
+			By("creating required templates for label tests")
+			cmd := exec.Command("kubectl", "apply", "-f",
+				"test/e2e/static/template-mutability/base-template.yaml")
+			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+
+			cmd = exec.Command("kubectl", "apply", "-f",
+				"test/e2e/static/template-mutability/restricted-template-mutability.yaml")
+			_, err = utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			By("cleaning up test workspace")
+			cmd := exec.Command("kubectl", "delete", "workspace", testWorkspaceName, "--ignore-not-found=true")
+			_, _ = utils.Run(cmd)
+
+			By("cleaning up test templates")
+			cmd = exec.Command("kubectl", "delete", "workspacetemplate",
+				baseTemplateName, alternateTemplateName, "--ignore-not-found=true")
+			_, _ = utils.Run(cmd)
+		})
+
+		It("should update label when templateRef changes", func() {
+			By("creating workspace with base template")
+			cmd := exec.Command("kubectl", "apply", "-f",
+				"test/e2e/static/template-mutability/label-update-workspace.yaml")
+			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("verifying initial label is set to base template")
+			cmd = exec.Command("kubectl", "get", "workspace", testWorkspaceName,
+				"-o", fmt.Sprintf("jsonpath={.metadata.labels['%s']}", labelKey))
+			output, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(output).To(Equal(baseTemplateName))
+
+			By("updating workspace to use alternate template")
+			patchJSON := fmt.Sprintf(`{"spec":{"templateRef":{"name":"%s"}}}`, alternateTemplateName)
+			cmd = exec.Command("kubectl", "patch", "workspace", testWorkspaceName,
+				"--type=merge", "-p", patchJSON)
+			_, err = utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("verifying label updated to alternate template")
+			cmd = exec.Command("kubectl", "get", "workspace", testWorkspaceName,
+				"-o", fmt.Sprintf("jsonpath={.metadata.labels['%s']}", labelKey))
+			output, err = utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(output).To(Equal(alternateTemplateName))
+		})
+
+		It("should remove label when templateRef is removed", func() {
+			By("creating workspace with template")
+			cmd := exec.Command("kubectl", "apply", "-f",
+				"test/e2e/static/template-mutability/label-update-workspace.yaml")
+			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("verifying label exists initially")
+			cmd = exec.Command("kubectl", "get", "workspace", testWorkspaceName,
+				"-o", fmt.Sprintf("jsonpath={.metadata.labels['%s']}", labelKey))
+			output, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(output).To(Equal(baseTemplateName))
+
+			By("removing templateRef from workspace")
+			patchJSON := `{"spec":{"templateRef":null}}`
+			cmd = exec.Command("kubectl", "patch", "workspace", testWorkspaceName,
+				"--type=merge", "-p", patchJSON)
+			_, err = utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("verifying label is removed")
+			cmd = exec.Command("kubectl", "get", "workspace", testWorkspaceName,
+				"-o", fmt.Sprintf("jsonpath={.metadata.labels['%s']}", labelKey))
+			output, err = utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(output).To(BeEmpty())
+		})
+
+		It("should not add label when workspace created without templateRef", func() {
+			By("creating workspace without templateRef")
+			cmd := exec.Command("kubectl", "apply", "-f",
+				"test/e2e/static/template-mutability/label-absent-workspace.yaml")
+			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("verifying template label is not present")
+			cmd = exec.Command("kubectl", "get", "workspace", testWorkspaceName,
+				"-o", fmt.Sprintf("jsonpath={.metadata.labels['%s']}", labelKey))
+			output, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(output).To(BeEmpty())
+
+			By("verifying other annotations still work")
+			cmd = exec.Command("kubectl", "get", "workspace", testWorkspaceName,
+				"-o", "jsonpath={.metadata.annotations['workspace\\.jupyter\\.org/created-by']}")
+			output, err = utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(output).NotTo(BeEmpty(), "created-by annotation should be set by webhook")
 		})
 	})
 })

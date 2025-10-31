@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -42,6 +43,42 @@ func createUserContext(baseCtx context.Context, operation, username string, grou
 	return admission.NewContextWithRequest(baseCtx, req)
 }
 
+// createUserContextWithOldObject creates a context with user information and old object for UPDATE testing
+func createUserContextWithOldObject(baseCtx context.Context, operation, username string, oldObj runtime.Object) context.Context {
+	userInfo := &authenticationv1.UserInfo{Username: username}
+	rawOldObj, err := json.Marshal(oldObj)
+	if err != nil {
+		panic(err)
+	}
+	req := admission.Request{
+		AdmissionRequest: admissionv1.AdmissionRequest{
+			UserInfo:  *userInfo,
+			Operation: admissionv1.Operation(operation),
+			OldObject: runtime.RawExtension{Raw: rawOldObj},
+		},
+	}
+	return admission.NewContextWithRequest(baseCtx, req)
+}
+
+// createTemplate creates a minimal WorkspaceTemplate for testing
+func createTemplate(name string) *workspacev1alpha1.WorkspaceTemplate {
+	return &workspacev1alpha1.WorkspaceTemplate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: workspacev1alpha1.WorkspaceTemplateSpec{
+			DisplayName:  name + " Display Name",
+			DefaultImage: "jupyter/minimal-notebook:latest",
+			DefaultResources: &corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("100m"),
+					corev1.ResourceMemory: resource.MustParse("128Mi"),
+				},
+			},
+		},
+	}
+}
+
 var _ = Describe("Workspace Webhook", func() {
 	var (
 		workspace *workspacev1alpha1.Workspace
@@ -63,7 +100,9 @@ var _ = Describe("Workspace Webhook", func() {
 				OwnershipType: "Public",
 			},
 		}
-		defaulter = WorkspaceCustomDefaulter{}
+		defaulter = WorkspaceCustomDefaulter{
+			templateValidator: NewTemplateValidator(k8sClient),
+		}
 		validator = WorkspaceCustomValidator{}
 		ctx = context.Background()
 	})
@@ -126,6 +165,94 @@ var _ = Describe("Workspace Webhook", func() {
 			Expect(workspace.Annotations).NotTo(HaveKey(controller.AnnotationCreatedBy))
 			Expect(workspace.Annotations).To(HaveKey(controller.AnnotationLastUpdatedBy))
 			Expect(workspace.Annotations[controller.AnnotationLastUpdatedBy]).To(Equal("update-user"))
+		})
+	})
+
+	Context("Template Label Management", func() {
+		var template *workspacev1alpha1.WorkspaceTemplate
+
+		BeforeEach(func() {
+			template = createTemplate("label-management-base")
+			Expect(k8sClient.Create(ctx, template)).To(Succeed())
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, template)).To(Succeed())
+		})
+
+		It("should add template label when workspace has templateRef", func() {
+			workspace.Spec.TemplateRef = &workspacev1alpha1.TemplateRef{Name: "label-management-base"}
+			ctx = createUserContext(ctx, "CREATE", "test-user")
+
+			err := defaulter.Default(ctx, workspace)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(workspace.Labels).To(HaveKey(controller.LabelWorkspaceTemplate))
+			Expect(workspace.Labels[controller.LabelWorkspaceTemplate]).To(Equal("label-management-base"))
+		})
+
+		It("should not add template label when workspace has no templateRef", func() {
+			workspace.Spec.TemplateRef = nil
+			ctx = createUserContext(ctx, "CREATE", "test-user")
+
+			err := defaulter.Default(ctx, workspace)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(workspace.Labels).NotTo(HaveKey(controller.LabelWorkspaceTemplate))
+		})
+
+		It("should preserve other labels when adding template label", func() {
+			workspace.Labels = map[string]string{"custom-label": "custom-value"}
+			workspace.Spec.TemplateRef = &workspacev1alpha1.TemplateRef{Name: "label-management-base"}
+			ctx = createUserContext(ctx, "CREATE", "test-user")
+
+			err := defaulter.Default(ctx, workspace)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(workspace.Labels["custom-label"]).To(Equal("custom-value"))
+			Expect(workspace.Labels[controller.LabelWorkspaceTemplate]).To(Equal("label-management-base"))
+		})
+
+		It("should update template label when templateRef changes", func() {
+			alternateTemplate := createTemplate("label-management-alternate")
+			Expect(k8sClient.Create(ctx, alternateTemplate)).To(Succeed())
+			defer func() { Expect(k8sClient.Delete(ctx, alternateTemplate)).To(Succeed()) }()
+
+			workspace.Labels = map[string]string{controller.LabelWorkspaceTemplate: "label-management-base"}
+			workspace.Spec.TemplateRef = &workspacev1alpha1.TemplateRef{Name: "label-management-alternate"}
+
+			oldWorkspace := workspace.DeepCopy()
+			oldWorkspace.Spec.TemplateRef = &workspacev1alpha1.TemplateRef{Name: "label-management-base"}
+
+			ctx = createUserContextWithOldObject(ctx, "UPDATE", "test-user", oldWorkspace)
+
+			err := defaulter.Default(ctx, workspace)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(workspace.Labels[controller.LabelWorkspaceTemplate]).To(Equal("label-management-alternate"))
+		})
+
+		It("should remove template label when templateRef is removed", func() {
+			workspace.Labels = map[string]string{
+				controller.LabelWorkspaceTemplate: "label-management-base",
+				"custom-label":                    "custom-value",
+			}
+			workspace.Spec.TemplateRef = nil
+
+			oldWorkspace := workspace.DeepCopy()
+			oldWorkspace.Spec.TemplateRef = &workspacev1alpha1.TemplateRef{Name: "label-management-base"}
+
+			ctx = createUserContextWithOldObject(ctx, "UPDATE", "test-user", oldWorkspace)
+
+			err := defaulter.Default(ctx, workspace)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(workspace.Labels).NotTo(HaveKey(controller.LabelWorkspaceTemplate))
+			Expect(workspace.Labels["custom-label"]).To(Equal("custom-value"))
+		})
+
+		It("should handle templateRef with empty name", func() {
+			workspace.Spec.TemplateRef = &workspacev1alpha1.TemplateRef{Name: ""}
+			ctx = createUserContext(ctx, "CREATE", "test-user")
+
+			err := defaulter.Default(ctx, workspace)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(workspace.Labels).NotTo(HaveKey(controller.LabelWorkspaceTemplate))
 		})
 	})
 

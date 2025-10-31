@@ -17,11 +17,13 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 
+	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -99,6 +101,41 @@ func validateOwnershipPermission(ctx context.Context, workspace *workspacev1alph
 	return fmt.Errorf("access denied: only workspace owner or cluster admins can modify OwnerOnly workspaces")
 }
 
+// manageTemplateLabel manages the workspace template label based on templateRef.
+// This label is used for efficient lookup of workspaces using a specific template.
+// The label is added/updated when templateRef is set, and removed when templateRef is cleared.
+func manageTemplateLabel(ctx context.Context, workspace *workspacev1alpha1.Workspace) {
+	req, err := admission.RequestFromContext(ctx)
+
+	var oldTemplateRef *workspacev1alpha1.TemplateRef
+	// For UPDATE operations, check old object to detect templateRef changes/removal
+	if err == nil && req.Operation == admissionv1.Update && len(req.OldObject.Raw) > 0 {
+		oldWorkspace := &workspacev1alpha1.Workspace{}
+		decoder := json.NewDecoder(bytes.NewReader(req.OldObject.Raw))
+		if decodeErr := decoder.Decode(oldWorkspace); decodeErr == nil {
+			oldTemplateRef = oldWorkspace.Spec.TemplateRef
+		}
+	}
+
+	newTemplateRef := workspace.Spec.TemplateRef
+
+	shouldHaveLabel := newTemplateRef != nil && newTemplateRef.Name != ""
+	hadLabel := oldTemplateRef != nil && oldTemplateRef.Name != ""
+
+	if shouldHaveLabel {
+		// Add or update label
+		if workspace.Labels == nil {
+			workspace.Labels = make(map[string]string)
+		}
+		workspace.Labels[controller.LabelWorkspaceTemplate] = newTemplateRef.Name
+	} else if hadLabel {
+		// TemplateRef was removed - remove label
+		if workspace.Labels != nil {
+			delete(workspace.Labels, controller.LabelWorkspaceTemplate)
+		}
+	}
+}
+
 // SetupWorkspaceWebhookWithManager registers the webhook for Workspace in the manager.
 func SetupWorkspaceWebhookWithManager(mgr ctrl.Manager) error {
 	templateValidator := NewTemplateValidator(mgr.GetClient())
@@ -150,6 +187,9 @@ func (d *WorkspaceCustomDefaulter) Default(ctx context.Context, obj runtime.Obje
 		workspace.Annotations[controller.AnnotationLastUpdatedBy] = sanitizedUsername
 		workspacelog.Info("Added last-updated-by annotation", "workspace", workspace.GetName(), "user", sanitizedUsername, "namespace", workspace.GetNamespace())
 	}
+
+	// Manage template label (alongside annotations)
+	manageTemplateLabel(ctx, workspace)
 
 	// Apply template defaults
 	if err := d.templateValidator.ApplyTemplateDefaults(ctx, workspace); err != nil {

@@ -1,0 +1,8 @@
+apiVersion: workspace.jupyter.org/v1alpha1
+kind: Workspace
+metadata:
+  name: label-test-workspace
+spec:
+  displayName: "Label Management Test"
+  templateRef:
+    name: mutability-base-template

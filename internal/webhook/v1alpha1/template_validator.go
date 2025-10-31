@@ -209,17 +209,6 @@ func (tv *TemplateValidator) ApplyTemplateDefaults(ctx context.Context, workspac
 		workspace.Spec.OwnershipType = template.Spec.DefaultOwnershipType
 	}
 
-	if workspace.Spec.TemplateRef != nil && workspace.Spec.TemplateRef.Name != "" {
-		if workspace.Labels == nil {
-			workspace.Labels = make(map[string]string)
-		}
-		workspace.Labels[controller.LabelWorkspaceTemplate] = workspace.Spec.TemplateRef.Name
-	} else {
-		if workspace.Labels != nil {
-			delete(workspace.Labels, controller.LabelWorkspaceTemplate)
-		}
-	}
-
 	return nil
 }
 

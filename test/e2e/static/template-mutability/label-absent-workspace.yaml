@@ -1,0 +1,7 @@
+apiVersion: workspace.jupyter.org/v1alpha1
+kind: Workspace
+metadata:
+  name: label-test-workspace
+spec:
+  displayName: "No Template Test"
+  image: "jupyter/minimal-notebook:latest"
