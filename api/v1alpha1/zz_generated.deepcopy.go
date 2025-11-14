@@ -273,10 +273,12 @@ func (in *ResourceBounds) DeepCopyInto(out *ResourceBounds) {
 		*out = new(ResourceRange)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.GPU != nil {
-		in, out := &in.GPU, &out.GPU
-		*out = new(ResourceRange)
-		(*in).DeepCopyInto(*out)
+	if in.ExtendedResources != nil {
+		in, out := &in.ExtendedResources, &out.ExtendedResources
+		*out = make(map[string]ResourceRange, len(*in))
+		for key, val := range *in {
+			(*out)[key] = *val.DeepCopy()
+		}
 	}
 }
 

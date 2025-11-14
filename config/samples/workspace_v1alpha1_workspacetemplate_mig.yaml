@@ -1,0 +1,47 @@
+# Example WorkspaceTemplate for NVIDIA MIG profiles
+apiVersion: workspace.jupyter.org/v1alpha1
+kind: WorkspaceTemplate
+metadata:
+  name: mig-notebook-template
+spec:
+  displayName: "NVIDIA MIG Notebook"
+  description: "Notebook template for NVIDIA Multi-Instance GPU profiles"
+  defaultImage: "nvidia/cuda:12.0.0-runtime-ubuntu22.04"
+  allowedImages:
+    - "nvidia/cuda:12.0.0-runtime-ubuntu22.04"
+    - "nvcr.io/nvidia/pytorch:23.10-py3"
+  defaultResources:
+    requests:
+      cpu: "2"
+      memory: "8Gi"
+      nvidia.com/gpu: "0"
+      nvidia.com/mig-1g.10gb: "1"
+    limits:
+      cpu: "4"
+      memory: "16Gi"
+      nvidia.com/gpu: "0"
+      nvidia.com/mig-1g.10gb: "1"
+  resourceBounds:
+    cpu:
+      min: "1"
+      max: "8"
+    memory:
+      min: "4Gi"
+      max: "32Gi"
+    extendedResources:
+      nvidia.com/mig-1g.10gb:
+        min: "0"
+        max: "4"
+      nvidia.com/mig-2g.20gb:
+        min: "0"
+        max: "2"
+  primaryStorage:
+    defaultSize: "20Gi"
+    minSize: "5Gi"
+    maxSize: "200Gi"
+  environmentVariables:
+    - name: JUPYTER_ENABLE_LAB
+      value: "yes"
+    - name: NVIDIA_VISIBLE_DEVICES
+      value: "all"
+  appType: "jupyter"

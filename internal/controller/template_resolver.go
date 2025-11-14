@@ -330,27 +330,29 @@ func (tr *TemplateResolver) validateResourceBounds(resources corev1.ResourceRequ
 		}
 	}
 
-	// Validate GPU bounds if specified
-	if bounds.GPU != nil && resources.Requests != nil {
-		gpuResourceName := corev1.ResourceName("nvidia.com/gpu")
-		if gpuRequest, exists := resources.Requests[gpuResourceName]; exists {
-			if gpuRequest.Cmp(bounds.GPU.Min) < 0 {
-				violations = append(violations, TemplateViolation{
-					Type:    ViolationTypeResourceExceeded,
-					Field:   "spec.resources.requests['nvidia.com/gpu']",
-					Message: "GPU request is below template minimum",
-					Allowed: fmt.Sprintf("min: %s", bounds.GPU.Min.String()),
-					Actual:  gpuRequest.String(),
-				})
-			}
-			if gpuRequest.Cmp(bounds.GPU.Max) > 0 {
-				violations = append(violations, TemplateViolation{
-					Type:    ViolationTypeResourceExceeded,
-					Field:   "spec.resources.requests['nvidia.com/gpu']",
-					Message: "GPU request exceeds template maximum",
-					Allowed: fmt.Sprintf("max: %s", bounds.GPU.Max.String()),
-					Actual:  gpuRequest.String(),
-				})
+	// Validate ExtendedResources bounds if specified
+	if bounds.ExtendedResources != nil && resources.Requests != nil {
+		for resourceName, resourceRange := range bounds.ExtendedResources {
+			k8sResourceName := corev1.ResourceName(resourceName)
+			if request, exists := resources.Requests[k8sResourceName]; exists {
+				if request.Cmp(resourceRange.Min) < 0 {
+					violations = append(violations, TemplateViolation{
+						Type:    ViolationTypeResourceExceeded,
+						Field:   fmt.Sprintf("spec.resources.requests['%s']", resourceName),
+						Message: fmt.Sprintf("%s request is below template minimum", resourceName),
+						Allowed: fmt.Sprintf("min: %s", resourceRange.Min.String()),
+						Actual:  request.String(),
+					})
+				}
+				if request.Cmp(resourceRange.Max) > 0 {
+					violations = append(violations, TemplateViolation{
+						Type:    ViolationTypeResourceExceeded,
+						Field:   fmt.Sprintf("spec.resources.requests['%s']", resourceName),
+						Message: fmt.Sprintf("%s request exceeds template maximum", resourceName),
+						Allowed: fmt.Sprintf("max: %s", resourceRange.Max.String()),
+						Actual:  request.String(),
+					})
+				}
 			}
 		}
 	}

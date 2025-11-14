@@ -1,0 +1,42 @@
+# Example WorkspaceTemplate for AMD GPU workloads
+apiVersion: workspace.jupyter.org/v1alpha1
+kind: WorkspaceTemplate
+metadata:
+  name: amd-gpu-notebook-template
+spec:
+  displayName: "AMD GPU Jupyter Notebook"
+  description: "Notebook template for AMD ROCm GPU workloads"
+  defaultImage: "rocm/pytorch:latest"
+  allowedImages:
+    - "rocm/pytorch:latest"
+    - "rocm/tensorflow:latest"
+  defaultResources:
+    requests:
+      cpu: "2"
+      memory: "8Gi"
+      amd.com/gpu: "1"
+    limits:
+      cpu: "4"
+      memory: "16Gi"
+      amd.com/gpu: "1"
+  resourceBounds:
+    cpu:
+      min: "1"
+      max: "8"
+    memory:
+      min: "4Gi"
+      max: "32Gi"
+    extendedResources:
+      amd.com/gpu:
+        min: "0"
+        max: "2"
+  primaryStorage:
+    defaultSize: "50Gi"
+    minSize: "10Gi"
+    maxSize: "500Gi"
+  environmentVariables:
+    - name: JUPYTER_ENABLE_LAB
+      value: "yes"
+    - name: HSA_OVERRIDE_GFX_VERSION
+      value: "10.3.0"
+  appType: "jupyter"

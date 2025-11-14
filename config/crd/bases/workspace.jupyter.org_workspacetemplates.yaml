@@ -1674,26 +1674,36 @@ spec:
                     - max
                     - min
                     type: object
-                  gpu:
-                    description: GPU bounds
-                    properties:
-                      max:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: Max is the maximum allowed value
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
-                      min:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: Min is the minimum allowed value
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
-                    required:
-                    - max
-                    - min
+                  extendedResources:
+                    additionalProperties:
+                      description: |-
+                        ResourceRange defines min and max for a resource
+                        NOTE: CEL validation for min <= max is not possible due to resource.Quantity type limitations
+                        Validation is enforced at runtime in the template resolver
+                      properties:
+                        max:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: Max is the maximum allowed value
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        min:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: Min is the minimum allowed value
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                      required:
+                      - max
+                      - min
+                      type: object
+                    description: |-
+                      ExtendedResources allows setting bounds for any extended resource
+                      Supports vendor-specific GPUs (nvidia.com/gpu, amd.com/gpu, intel.com/gpu),
+                      MIG profiles (nvidia.com/mig-1g.10gb), TPUs, FPGAs, and custom accelerators
+                      Map key must follow Kubernetes extended resource name format (vendor.com/resource)
                     type: object
                   memory:
                     description: Memory bounds

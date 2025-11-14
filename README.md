@@ -93,7 +93,7 @@ Templates are validated by the controller during reconciliation. Invalid workspa
 
 **Validation Rules**
 - Allowed Images: Only container images in the `allowedImages` list are permitted
-- Resource Bounds: CPU, memory, and GPU requests/limits must be within `resourceBounds` (min/max)
+- Resource Bounds: CPU, memory, and extended resources (nvidia.com/gpu, amd.com/gpu, nvidia.com/mig-*, etc.) requests/limits must be within `resourceBounds` (min/max)
 - Storage Bounds: Workspace storage must be within `primaryStorage.minSize` and `maxSize`
 
 **Cluster-Scoped Templates**

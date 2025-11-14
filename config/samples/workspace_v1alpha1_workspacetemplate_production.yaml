@@ -23,9 +23,10 @@ spec:
     memory:
       min: "128Mi"
       max: "4Gi"
-    gpu:
-      min: "0"
-      max: "1"
+    extendedResources:
+      nvidia.com/gpu:
+        min: "0"
+        max: "1"
   primaryStorage:
     defaultSize: "1Gi"
     minSize: "100Mi"

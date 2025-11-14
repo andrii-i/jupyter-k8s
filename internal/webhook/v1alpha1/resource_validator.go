@@ -112,6 +112,33 @@ func validateResourceBounds(resources corev1.ResourceRequirements, template *wor
 		}
 	}
 
+	// Validate ExtendedResources bounds
+	if bounds.ExtendedResources != nil && resources.Requests != nil {
+		for resourceName, resourceRange := range bounds.ExtendedResources {
+			k8sResourceName := corev1.ResourceName(resourceName)
+			if request, exists := resources.Requests[k8sResourceName]; exists {
+				if request.Cmp(resourceRange.Min) < 0 {
+					violations = append(violations, controller.TemplateViolation{
+						Type:    controller.ViolationTypeResourceExceeded,
+						Field:   fmt.Sprintf("spec.resources.requests['%s']", resourceName),
+						Message: fmt.Sprintf("%s request %s is below minimum %s required by template '%s'", resourceName, request.String(), resourceRange.Min.String(), template.Name),
+						Allowed: fmt.Sprintf("min: %s", resourceRange.Min.String()),
+						Actual:  request.String(),
+					})
+				}
+				if request.Cmp(resourceRange.Max) > 0 {
+					violations = append(violations, controller.TemplateViolation{
+						Type:    controller.ViolationTypeResourceExceeded,
+						Field:   fmt.Sprintf("spec.resources.requests['%s']", resourceName),
+						Message: fmt.Sprintf("%s request %s exceeds maximum %s allowed by template '%s'", resourceName, request.String(), resourceRange.Max.String(), template.Name),
+						Allowed: fmt.Sprintf("max: %s", resourceRange.Max.String()),
+						Actual:  request.String(),
+					})
+				}
+			}
+		}
+	}
+
 	return violations
 }
 

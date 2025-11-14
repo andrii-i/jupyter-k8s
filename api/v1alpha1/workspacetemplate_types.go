@@ -133,9 +133,12 @@ type ResourceBounds struct {
 	// +optional
 	Memory *ResourceRange `json:"memory,omitempty"`
 
-	// GPU bounds
+	// ExtendedResources allows setting bounds for any extended resource
+	// Supports vendor-specific GPUs (nvidia.com/gpu, amd.com/gpu, intel.com/gpu),
+	// MIG profiles (nvidia.com/mig-1g.10gb), TPUs, FPGAs, and custom accelerators
+	// Map key must follow Kubernetes extended resource name format (vendor.com/resource)
 	// +optional
-	GPU *ResourceRange `json:"gpu,omitempty"`
+	ExtendedResources map[string]ResourceRange `json:"extendedResources,omitempty"`
 }
 
 // ResourceRange defines min and max for a resource

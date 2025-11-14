@@ -76,9 +76,15 @@ var _ = Describe("Template Validation", func() {
 							Min: resource.MustParse("256Mi"),
 							Max: resource.MustParse("8Gi"),
 						},
-						GPU: &workspacev1alpha1.ResourceRange{
-							Min: resource.MustParse("0"),
-							Max: resource.MustParse("2"),
+						ExtendedResources: map[string]workspacev1alpha1.ResourceRange{
+							"nvidia.com/gpu": {
+								Min: resource.MustParse("0"),
+								Max: resource.MustParse("2"),
+							},
+							"amd.com/gpu": {
+								Min: resource.MustParse("0"),
+								Max: resource.MustParse("1"),
+							},
 						},
 					},
 					PrimaryStorage: &workspacev1alpha1.StorageConfig{
@@ -343,10 +349,10 @@ var _ = Describe("Template Validation", func() {
 				Expect(result.Violations[0].Field).To(Equal("spec.resources.requests.memory"))
 			})
 
-			It("should validate GPU resources", func() {
+			It("should validate NVIDIA GPU resources", func() {
 				workspace := &workspacev1alpha1.Workspace{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "gpu-workspace",
+						Name:      "nvidia-gpu-workspace",
 						Namespace: "default",
 					},
 					Spec: workspacev1alpha1.WorkspaceSpec{
@@ -365,17 +371,39 @@ var _ = Describe("Template Validation", func() {
 				Expect(result.Violations).To(BeEmpty())
 			})
 
-			It("should reject GPU requests above maximum", func() {
+			It("should validate AMD GPU resources", func() {
 				workspace := &workspacev1alpha1.Workspace{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "gpu-exceeded-workspace",
+						Name:      "amd-gpu-workspace",
 						Namespace: "default",
 					},
 					Spec: workspacev1alpha1.WorkspaceSpec{
 						TemplateRef: &templateName,
 						Resources: &corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
-								corev1.ResourceName("nvidia.com/gpu"): resource.MustParse("4"), // Exceeds max of 2
+								corev1.ResourceName("amd.com/gpu"): resource.MustParse("1"),
+							},
+						},
+					},
+				}
+
+				result, err := templateResolver.ValidateAndResolveTemplate(ctx, workspace)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result.Valid).To(BeTrue())
+				Expect(result.Violations).To(BeEmpty())
+			})
+
+			It("should reject NVIDIA GPU requests above maximum", func() {
+				workspace := &workspacev1alpha1.Workspace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "nvidia-gpu-exceeded-workspace",
+						Namespace: "default",
+					},
+					Spec: workspacev1alpha1.WorkspaceSpec{
+						TemplateRef: &templateName,
+						Resources: &corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceName("nvidia.com/gpu"): resource.MustParse("4"),
 							},
 						},
 					},
@@ -387,6 +415,30 @@ var _ = Describe("Template Validation", func() {
 				Expect(result.Violations).To(HaveLen(1))
 				Expect(result.Violations[0].Type).To(Equal(ViolationTypeResourceExceeded))
 				Expect(result.Violations[0].Field).To(Equal("spec.resources.requests['nvidia.com/gpu']"))
+			})
+
+			It("should reject AMD GPU requests above maximum", func() {
+				workspace := &workspacev1alpha1.Workspace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "amd-gpu-exceeded-workspace",
+						Namespace: "default",
+					},
+					Spec: workspacev1alpha1.WorkspaceSpec{
+						TemplateRef: &templateName,
+						Resources: &corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceName("amd.com/gpu"): resource.MustParse("2"),
+							},
+						},
+					},
+				}
+
+				result, err := templateResolver.ValidateAndResolveTemplate(ctx, workspace)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result.Valid).To(BeFalse())
+				Expect(result.Violations).To(HaveLen(1))
+				Expect(result.Violations[0].Type).To(Equal(ViolationTypeResourceExceeded))
+				Expect(result.Violations[0].Field).To(Equal("spec.resources.requests['amd.com/gpu']"))
 			})
 		})
 
