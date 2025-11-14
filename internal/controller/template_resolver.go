@@ -282,57 +282,9 @@ func (tr *TemplateResolver) validateResourceBounds(resources corev1.ResourceRequ
 		return violations
 	}
 
-	// Validate CPU bounds
-	if bounds.CPU != nil && resources.Requests != nil {
-		if cpuRequest, exists := resources.Requests[corev1.ResourceCPU]; exists {
-			if cpuRequest.Cmp(bounds.CPU.Min) < 0 {
-				violations = append(violations, TemplateViolation{
-					Type:    ViolationTypeResourceExceeded,
-					Field:   "spec.resources.requests.cpu",
-					Message: "CPU request is below template minimum",
-					Allowed: fmt.Sprintf("min: %s", bounds.CPU.Min.String()),
-					Actual:  cpuRequest.String(),
-				})
-			}
-			if cpuRequest.Cmp(bounds.CPU.Max) > 0 {
-				violations = append(violations, TemplateViolation{
-					Type:    ViolationTypeResourceExceeded,
-					Field:   "spec.resources.requests.cpu",
-					Message: "CPU request exceeds template maximum",
-					Allowed: fmt.Sprintf("max: %s", bounds.CPU.Max.String()),
-					Actual:  cpuRequest.String(),
-				})
-			}
-		}
-	}
-
-	// Validate Memory bounds
-	if bounds.Memory != nil && resources.Requests != nil {
-		if memoryRequest, exists := resources.Requests[corev1.ResourceMemory]; exists {
-			if memoryRequest.Cmp(bounds.Memory.Min) < 0 {
-				violations = append(violations, TemplateViolation{
-					Type:    ViolationTypeResourceExceeded,
-					Field:   "spec.resources.requests.memory",
-					Message: "Memory request is below template minimum",
-					Allowed: fmt.Sprintf("min: %s", bounds.Memory.Min.String()),
-					Actual:  memoryRequest.String(),
-				})
-			}
-			if memoryRequest.Cmp(bounds.Memory.Max) > 0 {
-				violations = append(violations, TemplateViolation{
-					Type:    ViolationTypeResourceExceeded,
-					Field:   "spec.resources.requests.memory",
-					Message: "Memory request exceeds template maximum",
-					Allowed: fmt.Sprintf("max: %s", bounds.Memory.Max.String()),
-					Actual:  memoryRequest.String(),
-				})
-			}
-		}
-	}
-
-	// Validate ExtendedResources bounds if specified
-	if bounds.ExtendedResources != nil && resources.Requests != nil {
-		for resourceName, resourceRange := range bounds.ExtendedResources {
+	// Validate resource bounds
+	if bounds.Resources != nil && resources.Requests != nil {
+		for resourceName, resourceRange := range bounds.Resources {
 			k8sResourceName := corev1.ResourceName(resourceName)
 			if request, exists := resources.Requests[k8sResourceName]; exists {
 				if request.Cmp(resourceRange.Min) < 0 {

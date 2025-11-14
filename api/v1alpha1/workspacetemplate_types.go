@@ -125,20 +125,10 @@ type WorkspaceTemplateSpec struct {
 
 // ResourceBounds defines minimum and maximum resource limits
 type ResourceBounds struct {
-	// CPU bounds
+	// Resources defines min/max bounds for any Kubernetes resource
+	// Map keys follow Kubernetes resource name format (e.g., cpu, memory, nvidia.com/gpu)
 	// +optional
-	CPU *ResourceRange `json:"cpu,omitempty"`
-
-	// Memory bounds
-	// +optional
-	Memory *ResourceRange `json:"memory,omitempty"`
-
-	// ExtendedResources allows setting bounds for any extended resource
-	// Supports vendor-specific GPUs (nvidia.com/gpu, amd.com/gpu, intel.com/gpu),
-	// MIG profiles (nvidia.com/mig-1g.10gb), TPUs, FPGAs, and custom accelerators
-	// Map key must follow Kubernetes extended resource name format (vendor.com/resource)
-	// +optional
-	ExtendedResources map[string]ResourceRange `json:"extendedResources,omitempty"`
+	Resources map[string]ResourceRange `json:"resources,omitempty"`
 }
 
 // ResourceRange defines min and max for a resource

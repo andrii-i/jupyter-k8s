@@ -68,15 +68,15 @@ var _ = Describe("Template Validation", func() {
 						},
 					},
 					ResourceBounds: &workspacev1alpha1.ResourceBounds{
-						CPU: &workspacev1alpha1.ResourceRange{
-							Min: resource.MustParse("100m"),
-							Max: resource.MustParse("4"),
-						},
-						Memory: &workspacev1alpha1.ResourceRange{
-							Min: resource.MustParse("256Mi"),
-							Max: resource.MustParse("8Gi"),
-						},
-						ExtendedResources: map[string]workspacev1alpha1.ResourceRange{
+						Resources: map[string]workspacev1alpha1.ResourceRange{
+							"cpu": {
+								Min: resource.MustParse("100m"),
+								Max: resource.MustParse("4"),
+							},
+							"memory": {
+								Min: resource.MustParse("256Mi"),
+								Max: resource.MustParse("8Gi"),
+							},
 							"nvidia.com/gpu": {
 								Min: resource.MustParse("0"),
 								Max: resource.MustParse("2"),

@@ -615,15 +615,13 @@ var _ = Describe("Workspace Webhook", func() {
 		Context("validateResourceBounds", func() {
 			BeforeEach(func() {
 				template.Spec.ResourceBounds = &workspacev1alpha1.ResourceBounds{
-					Resources: map[string]workspacev1alpha1.ResourceRange{
-						"cpu": {
-							Min: resource.MustParse("100m"),
-							Max: resource.MustParse("2"),
-						},
-						"memory": {
-							Min: resource.MustParse("128Mi"),
-							Max: resource.MustParse("4Gi"),
-						},
+					CPU: &workspacev1alpha1.ResourceRange{
+						Min: resource.MustParse("100m"),
+						Max: resource.MustParse("2"),
+					},
+					Memory: &workspacev1alpha1.ResourceRange{
+						Min: resource.MustParse("128Mi"),
+						Max: resource.MustParse("4Gi"),
 					},
 				}
 			})

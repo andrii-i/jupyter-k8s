@@ -22,13 +22,13 @@ spec:
       nvidia.com/gpu: "0"
       nvidia.com/mig-1g.10gb: "1"
   resourceBounds:
-    cpu:
-      min: "1"
-      max: "8"
-    memory:
-      min: "4Gi"
-      max: "32Gi"
-    extendedResources:
+    resources:
+      cpu:
+        min: "1"
+        max: "8"
+      memory:
+        min: "4Gi"
+        max: "32Gi"
       nvidia.com/mig-1g.10gb:
         min: "0"
         max: "4"

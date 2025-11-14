@@ -64,57 +64,9 @@ func validateResourceBounds(resources corev1.ResourceRequirements, template *wor
 		return violations
 	}
 
-	// Validate CPU bounds
-	if bounds.CPU != nil && resources.Requests != nil {
-		if cpuRequest, exists := resources.Requests[corev1.ResourceCPU]; exists {
-			if cpuRequest.Cmp(bounds.CPU.Min) < 0 {
-				violations = append(violations, controller.TemplateViolation{
-					Type:    controller.ViolationTypeResourceExceeded,
-					Field:   "spec.resources.requests.cpu",
-					Message: fmt.Sprintf("CPU request %s is below minimum %s required by template '%s'", cpuRequest.String(), bounds.CPU.Min.String(), template.Name),
-					Allowed: fmt.Sprintf("min: %s", bounds.CPU.Min.String()),
-					Actual:  cpuRequest.String(),
-				})
-			}
-			if cpuRequest.Cmp(bounds.CPU.Max) > 0 {
-				violations = append(violations, controller.TemplateViolation{
-					Type:    controller.ViolationTypeResourceExceeded,
-					Field:   "spec.resources.requests.cpu",
-					Message: fmt.Sprintf("CPU request %s exceeds maximum %s allowed by template '%s'", cpuRequest.String(), bounds.CPU.Max.String(), template.Name),
-					Allowed: fmt.Sprintf("max: %s", bounds.CPU.Max.String()),
-					Actual:  cpuRequest.String(),
-				})
-			}
-		}
-	}
-
-	// Validate memory bounds
-	if bounds.Memory != nil && resources.Requests != nil {
-		if memRequest, exists := resources.Requests[corev1.ResourceMemory]; exists {
-			if memRequest.Cmp(bounds.Memory.Min) < 0 {
-				violations = append(violations, controller.TemplateViolation{
-					Type:    controller.ViolationTypeResourceExceeded,
-					Field:   "spec.resources.requests.memory",
-					Message: fmt.Sprintf("Memory request %s is below minimum %s required by template '%s'", memRequest.String(), bounds.Memory.Min.String(), template.Name),
-					Allowed: fmt.Sprintf("min: %s", bounds.Memory.Min.String()),
-					Actual:  memRequest.String(),
-				})
-			}
-			if memRequest.Cmp(bounds.Memory.Max) > 0 {
-				violations = append(violations, controller.TemplateViolation{
-					Type:    controller.ViolationTypeResourceExceeded,
-					Field:   "spec.resources.requests.memory",
-					Message: fmt.Sprintf("Memory request %s exceeds maximum %s allowed by template '%s'", memRequest.String(), bounds.Memory.Max.String(), template.Name),
-					Allowed: fmt.Sprintf("max: %s", bounds.Memory.Max.String()),
-					Actual:  memRequest.String(),
-				})
-			}
-		}
-	}
-
-	// Validate ExtendedResources bounds
-	if bounds.ExtendedResources != nil && resources.Requests != nil {
-		for resourceName, resourceRange := range bounds.ExtendedResources {
+	// Validate resource bounds
+	if bounds.Resources != nil && resources.Requests != nil {
+		for resourceName, resourceRange := range bounds.Resources {
 			k8sResourceName := corev1.ResourceName(resourceName)
 			if request, exists := resources.Requests[k8sResourceName]; exists {
 				if request.Cmp(resourceRange.Min) < 0 {

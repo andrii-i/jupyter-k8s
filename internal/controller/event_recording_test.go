@@ -224,9 +224,11 @@ var _ = Describe("Event Recording", func() {
 					DisplayName:  "Bounded Template",
 					DefaultImage: "test-image:latest",
 					ResourceBounds: &workspacev1alpha1.ResourceBounds{
-						CPU: &workspacev1alpha1.ResourceRange{
-							Min: resource.MustParse("250m"),
-							Max: resource.MustParse("2"),
+						Resources: map[string]workspacev1alpha1.ResourceRange{
+							"cpu": {
+								Min: resource.MustParse("250m"),
+								Max: resource.MustParse("2"),
+							},
 						},
 					},
 				},

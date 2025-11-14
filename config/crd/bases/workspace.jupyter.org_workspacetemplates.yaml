@@ -1653,28 +1653,7 @@ spec:
                 description: ResourceBounds defines the min/max boundaries for resource
                   overrides
                 properties:
-                  cpu:
-                    description: CPU bounds
-                    properties:
-                      max:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: Max is the maximum allowed value
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
-                      min:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: Min is the minimum allowed value
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
-                    required:
-                    - max
-                    - min
-                    type: object
-                  extendedResources:
+                  resources:
                     additionalProperties:
                       description: |-
                         ResourceRange defines min and max for a resource
@@ -1700,31 +1679,8 @@ spec:
                       - min
                       type: object
                     description: |-
-                      ExtendedResources allows setting bounds for any extended resource
-                      Supports vendor-specific GPUs (nvidia.com/gpu, amd.com/gpu, intel.com/gpu),
-                      MIG profiles (nvidia.com/mig-1g.10gb), TPUs, FPGAs, and custom accelerators
-                      Map key must follow Kubernetes extended resource name format (vendor.com/resource)
-                    type: object
-                  memory:
-                    description: Memory bounds
-                    properties:
-                      max:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: Max is the maximum allowed value
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
-                      min:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: Min is the minimum allowed value
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
-                    required:
-                    - max
-                    - min
+                      Resources defines min/max bounds for any Kubernetes resource
+                      Map keys follow Kubernetes resource name format (e.g., cpu, memory, nvidia.com/gpu)
                     type: object
                 type: object
             required:

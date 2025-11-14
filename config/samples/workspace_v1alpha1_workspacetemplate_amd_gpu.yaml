@@ -20,13 +20,13 @@ spec:
       memory: "16Gi"
       amd.com/gpu: "1"
   resourceBounds:
-    cpu:
-      min: "1"
-      max: "8"
-    memory:
-      min: "4Gi"
-      max: "32Gi"
-    extendedResources:
+    resources:
+      cpu:
+        min: "1"
+        max: "8"
+      memory:
+        min: "4Gi"
+        max: "32Gi"
       amd.com/gpu:
         min: "0"
         max: "2"

@@ -17,13 +17,13 @@ spec:
       cpu: "500m"
       memory: "512Mi"
   resourceBounds:
-    cpu:
-      min: "100m"
-      max: "2"
-    memory:
-      min: "128Mi"
-      max: "4Gi"
-    extendedResources:
+    resources:
+      cpu:
+        min: "100m"
+        max: "2"
+      memory:
+        min: "128Mi"
+        max: "4Gi"
       nvidia.com/gpu:
         min: "0"
         max: "1"
