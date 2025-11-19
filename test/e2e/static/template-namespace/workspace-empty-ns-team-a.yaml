@@ -1,0 +1,12 @@
+apiVersion: workspace.jupyter.org/v1alpha1
+kind: Workspace
+metadata:
+  name: test-empty-ns-workspace-team-a
+  namespace: team-a
+spec:
+  displayName: "Test Empty Namespace - Team A"
+  ownershipType: Public
+  desiredStatus: Running
+  templateRef:
+    name: basic-template
+    # namespace is intentionally omitted - should default to workspace namespace (team-a)

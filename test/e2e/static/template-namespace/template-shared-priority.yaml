@@ -1,0 +1,17 @@
+apiVersion: workspace.jupyter.org/v1alpha1
+kind: WorkspaceTemplate
+metadata:
+  name: priority-test-template
+  namespace: jupyter-k8s-shared
+spec:
+  displayName: "Shared Priority Template"
+  description: "Template for testing priority - should NOT be used when team-a version exists"
+  defaultImage: "jupyter/base-notebook:shared-priority"
+  defaultResources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "200m"
+      memory: "512Mi"
+  defaultStorageSize: "1Gi"

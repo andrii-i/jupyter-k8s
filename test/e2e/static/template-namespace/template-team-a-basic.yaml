@@ -1,0 +1,17 @@
+apiVersion: workspace.jupyter.org/v1alpha1
+kind: WorkspaceTemplate
+metadata:
+  name: basic-template
+  namespace: team-a
+spec:
+  displayName: "Team A Basic Template"
+  description: "Basic template for team-a namespace resolution test"
+  defaultImage: "jupyter/base-notebook:team-a"
+  defaultResources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+  defaultStorageSize: "10Gi"

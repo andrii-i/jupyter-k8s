@@ -1,0 +1,12 @@
+apiVersion: workspace.jupyter.org/v1alpha1
+kind: Workspace
+metadata:
+  name: test-cross-ns-workspace
+  namespace: team-b
+spec:
+  displayName: "Test Explicit Cross-Namespace Reference"
+  ownershipType: Public
+  desiredStatus: Running
+  templateRef:
+    name: platform-shared-template
+    namespace: platform-templates  # Explicitly reference different namespace

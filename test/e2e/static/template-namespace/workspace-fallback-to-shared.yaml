@@ -1,0 +1,13 @@
+apiVersion: workspace.jupyter.org/v1alpha1
+kind: Workspace
+metadata:
+  name: test-fallback-workspace
+  namespace: team-a
+spec:
+  displayName: "Test Fallback to Shared Namespace"
+  ownershipType: Public
+  desiredStatus: Running
+  templateRef:
+    name: fallback-template
+    # namespace is intentionally omitted
+    # Template does NOT exist in team-a, should fallback to jupyter-k8s-shared

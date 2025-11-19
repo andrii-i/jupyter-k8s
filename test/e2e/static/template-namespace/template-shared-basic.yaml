@@ -1,0 +1,17 @@
+apiVersion: workspace.jupyter.org/v1alpha1
+kind: WorkspaceTemplate
+metadata:
+  name: fallback-template
+  namespace: jupyter-k8s-shared
+spec:
+  displayName: "Shared Fallback Template"
+  description: "Template for testing default namespace fallback"
+  defaultImage: "jupyter/base-notebook:shared"
+  defaultResources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+  defaultStorageSize: "5Gi"

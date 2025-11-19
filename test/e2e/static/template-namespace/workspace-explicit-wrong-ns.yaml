@@ -1,0 +1,12 @@
+apiVersion: workspace.jupyter.org/v1alpha1
+kind: Workspace
+metadata:
+  name: test-explicit-wrong-ns
+  namespace: team-a
+spec:
+  displayName: "Test Explicit Wrong Namespace"
+  ownershipType: Public
+  desiredStatus: Running
+  templateRef:
+    name: basic-template
+    namespace: team-b  # Explicit but wrong - template doesn't exist in team-b

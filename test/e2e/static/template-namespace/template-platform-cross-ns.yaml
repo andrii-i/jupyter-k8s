@@ -1,0 +1,17 @@
+apiVersion: workspace.jupyter.org/v1alpha1
+kind: WorkspaceTemplate
+metadata:
+  name: platform-shared-template
+  namespace: platform-templates
+spec:
+  displayName: "Platform Shared Template"
+  description: "Template for testing explicit cross-namespace references"
+  defaultImage: "jupyter/base-notebook:platform"
+  defaultResources:
+    requests:
+      cpu: "2000m"
+      memory: "4Gi"
+    limits:
+      cpu: "4000m"
+      memory: "8Gi"
+  defaultStorageSize: "50Gi"
